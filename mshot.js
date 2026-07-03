@@ -37,6 +37,13 @@ const VERSION = JSON.parse(
 
 // ── Constants ─────────────────────────────────────────────
 const ALLOWED_EXTS = ['.jpg', '.jpeg', '.png', '.webp']
+const SCROLL = {
+  stepRatio: 0.8,
+  delayMs: 150,
+  maxPasses: 1,
+  maxHeight: 30_000,
+  imageTimeout: 2000
+}
 const DEFAULTS = {
   width: 1440,
   quality: 82,
@@ -67,6 +74,7 @@ Options:
   --quality <1-100>       JPEG/WebP quality, default ${DEFAULTS.quality}
   --timeout <ms>          Page load timeout, default ${DEFAULTS.timeout}
   --wait <ms>             Extra wait after load, default ${DEFAULTS.wait}
+  --no-pre-scroll         Skip pre-scroll stabilization
   --version
   --help`)
 }
@@ -85,12 +93,16 @@ const { values } = parseArgs({
     timeout: { type: 'string', default: String(DEFAULTS.timeout) },
     wait: { type: 'string', default: String(DEFAULTS.wait) },
     'max-height': { type: 'string' },
+    'pre-scroll': { type: 'boolean', default: true },
+    'no-pre-scroll': { type: 'boolean', default: false },
     help: { type: 'boolean', default: false },
     version: { type: 'boolean', default: false }
   },
   allowPositionals: false,
   strict: true
 })
+
+const isPreScrollEnabled = !values['no-pre-scroll'] && values['pre-scroll']
 
 if (values.help) {
   showHelp()
@@ -146,6 +158,76 @@ try {
   fatal(`cannot create output directory: ${dirname(outFile)}`)
 }
 
+// ── Scroll helpers ────────────────────────────────────────
+async function preScroll(page) {
+  const scrollHeight = await page.evaluate(() =>
+    Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
+  )
+
+  if (scrollHeight <= 0) return
+
+  const viewportHeight = await page.evaluate(() => window.innerHeight)
+  const step = Math.max(300, Math.floor(viewportHeight * SCROLL.stepRatio))
+  const cappedHeight = Math.min(scrollHeight, SCROLL.maxHeight)
+
+  if (scrollHeight > SCROLL.maxHeight) {
+    console.error(
+      `MSHOT_SCROLL_LIMITED: page height ${scrollHeight}px, ` +
+        `pre-scroll capped at ${SCROLL.maxHeight}px`
+    )
+  }
+
+  for (let pass = 0; pass < SCROLL.maxPasses; pass++) {
+    for (let y = 0; y < cappedHeight; y += step) {
+      await page.evaluate(top => window.scrollTo(0, top), y)
+      await new Promise(r => setTimeout(r, SCROLL.delayMs))
+
+      // Track growing pages (lazy-loaded content)
+      const nextHeight = await page.evaluate(() =>
+        Math.max(
+          document.documentElement.scrollHeight,
+          document.body.scrollHeight
+        )
+      )
+      if (nextHeight > cappedHeight) {
+        // Continue scrolling if page grew
+      }
+    }
+
+    // Scroll to bottom
+    await page.evaluate(() =>
+      window.scrollTo(0, document.documentElement.scrollHeight)
+    )
+    await new Promise(r => setTimeout(r, SCROLL.delayMs))
+  }
+
+  // Scroll back to top
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await new Promise(r => setTimeout(r, 300))
+
+  console.error(`MSHOT_SCROLL: page height ${scrollHeight}px, pre-scroll done`)
+}
+
+async function waitForImages(page) {
+  await page.evaluate(async timeout => {
+    const images = [...document.images]
+    const pending = images.filter(img => !img.complete)
+
+    if (pending.length === 0) return
+
+    await Promise.all(
+      pending.map(
+        img =>
+          new Promise(resolve => {
+            img.addEventListener('load', resolve)
+            img.onerror = resolve
+            setTimeout(resolve, timeout)
+          })
+      )
+    )
+  }, SCROLL.imageTimeout)
+}
+
 // ── Main ──────────────────────────────────────────────────
 let temporaryFile = null
 let browser = null
@@ -172,12 +254,22 @@ try {
     // proceed anyway
   }
 
-  // 4. Extra wait for animations/layout
+  // 4. Pre-scroll stabilization (default on)
+  if (isPreScrollEnabled) {
+    await preScroll(page)
+  }
+
+  // 5. Best-effort image wait after scroll
+  if (isPreScrollEnabled) {
+    await waitForImages(page)
+  }
+
+  // 6. Extra wait for animations/layout
   if (waitMs > 0) {
     await new Promise(r => setTimeout(r, waitMs))
   }
 
-  // 5. Full-page screenshot
+  // 7. Full-page screenshot
   let buffer = await page.screenshot({
     fullPage: true,
     type: 'jpeg',

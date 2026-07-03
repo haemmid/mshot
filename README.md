@@ -28,6 +28,7 @@ mshot --url <url> --out <file> [options]
 | `--quality <1-100>` | `82`         | JPEG/WebP quality                     |
 | `--timeout <ms>`    | `30000`      | Page load timeout                     |
 | `--wait <ms>`       | `500`        | Extra wait after load                 |
+| `--no-pre-scroll`   |              | Skip pre-scroll stabilization         |
 | `--version`         |              | Print version                         |
 | `--help`            |              | Show usage                            |
 
@@ -62,12 +63,14 @@ exit: 1
 2. Creates new context with specified viewport
 3. Navigates to URL, waits `domcontentloaded`
 4. Waits `networkidle` (10s fallback, proceeds anyway)
-5. Extra wait (`--wait`, default 500ms) for animations
-6. Captures full-page screenshot
-7. If `--max-height` set and page is taller: crops to limit
-8. Atomic write (tmp file → rename)
-9. Auto-creates output parent directory
-10. Prints path to stdout
+5. **Pre-scrolls** page top→bottom→top (reveals lazy/intersection content)
+6. Best-effort wait for images to load
+7. Extra wait (`--wait`, default 500ms) for animations
+8. Captures full-page screenshot
+9. If `--max-height` set and page is taller: crops to limit
+10. Atomic write (tmp file → rename)
+11. Auto-creates output parent directory
+12. Prints path to stdout
 
 ### Examples
 
@@ -76,6 +79,7 @@ mshot --url https://example.com --out example.jpg
 mshot --url https://example.com --out example.webp
 mshot --url https://example.com --out example.jpg --max-height 20000
 mshot --url https://example.com --out example.jpg --width 800 --quality 50
+mshot --url https://example.com --out example.jpg --no-pre-scroll
 ```
 
 ## Design philosophy

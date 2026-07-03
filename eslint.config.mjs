@@ -43,6 +43,7 @@ export default [
       'unicorn/catch-error-name': 'off',
       'unicorn/prefer-split-limit': 'off',
       'unicorn/relative-url-style': 'off',
+      'unicorn/prefer-add-event-listener': 'off',
 
       // CLI tools use console.error for diagnostics
       'no-console': 'off'
