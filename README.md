@@ -43,8 +43,9 @@ mshot --url <url> --out <file> \
 2. Creates new context with specified viewport
 3. Navigates to URL, waits `domcontentloaded`
 4. Waits `networkidle` (10s fallback, proceeds anyway)
-5. Captures full-page JPEG screenshot
-6. Writes file, prints path to stdout
+5. Captures full-page screenshot (JPEG or WebP by extension)
+6. If `--max-height` set and page is taller: crops to limit
+7. Writes file, prints path to stdout
 
 ### Example
 
@@ -58,6 +59,13 @@ With height limit:
 ```bash
 mshot --url https://longpage.com --out page.jpg --max-height 20000
 # → MSHOT_LIMITED: page height 42000px, captured first 20000px
+```
+
+WebP output:
+
+```bash
+mshot --url https://example.com --out example.webp
+# → auto-detects format from extension
 ```
 
 ## Design philosophy

@@ -5,28 +5,21 @@
 // stderr: diagnostics
 // exit 0 on success, non-zero on failure
 
-import { resolve, dirname, extname } from "node:path";
+import { resolve, extname } from "node:path";
 import { parseArgs } from "node:util";
 import { chromium } from "playwright";
 import { createWriteStream, statSync } from "node:fs";
-
-// ── Defaults ──────────────────────────────────────────────
-const DEFAULTS = {
-  width: 1440,
-  quality: 82,
-  timeout: 30_000,
-  maxHeights: null, // no limit by default
-};
+import sharp from "sharp";
 
 // ── Parse args ────────────────────────────────────────────
-const { values, positionals } = parseArgs({
+const { values } = parseArgs({
   options: {
-    url:        { type: "string" },
-    out:        { type: "string" },
-    width:      { type: "string",  default: String(DEFAULTS.width) },
-    quality:    { type: "string",  default: String(DEFAULTS.quality) },
-    timeout:    { type: "string",  default: String(DEFAULTS.timeout) },
-    "max-height": { type: "string", default: null },
+    url:          { type: "string" },
+    out:          { type: "string" },
+    width:        { type: "string",  default: "1440" },
+    quality:      { type: "string",  default: "82" },
+    timeout:      { type: "string",  default: "30000" },
+    "max-height": { type: "string" },
   },
   allowPositionals: false,
   strict: true,
@@ -50,7 +43,11 @@ const quality = parseInt(values.quality, 10);
 const timeout = parseInt(values.timeout, 10);
 const maxHeight = values["max-height"]
   ? parseInt(values["max-height"], 10)
-  : null;
+  : undefined;
+
+// Determine output format from extension
+const ext = extname(outFile).toLowerCase();
+const format = ext === ".webp" ? "webp" : "jpeg";
 
 // ── Main ──────────────────────────────────────────────────
 (async () => {
@@ -61,7 +58,8 @@ const maxHeight = values["max-height"]
     const context = await browser.newContext({
       viewport: { width, height: 900 },
       userAgent:
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     });
 
     const page = await context.newPage();
@@ -79,9 +77,17 @@ const maxHeight = values["max-height"]
       console.error("mshot: networkidle timeout, proceeding anyway");
     }
 
-    // 4. Check max-height
+    // 4. Full-page screenshot
+    console.error("mshot: capturing full-page screenshot…");
+    let buffer = await page.screenshot({
+      fullPage: true,
+      type: "jpeg",
+      quality,
+    });
+
+    // 5. Check max-height — crop if needed
     let limited = false;
-    if (maxHeight !== null) {
+    if (maxHeight !== undefined) {
       const pageHeight = await page.evaluate(() =>
         Math.max(
           document.documentElement.scrollHeight,
@@ -91,23 +97,26 @@ const maxHeight = values["max-height"]
       if (pageHeight > maxHeight) {
         limited = true;
         console.error(
-          `MSHOT_LIMITED: page height ${pageHeight}px, capturing first ${maxHeight}px`
+          `MSHOT_LIMITED: page height ${pageHeight}px, ` +
+          `captured first ${maxHeight}px`
         );
-        // Crop viewport to max height
-        await context.updateViewport({ width, height: maxHeight });
+        // Crop to maxHeight (cut bottom, don't scale)
+        const { width: w, height: h } = await sharp(buffer).metadata();
+        buffer = await sharp(buffer)
+          .extract({ left: 0, top: 0, width: w, height: Math.min(h, maxHeight) })
+          .toBuffer();
       }
     }
 
-    // 5. Full-page screenshot
-    console.error("mshot: capturing full-page screenshot…");
+    // 6. Convert to output format if needed
+    if (format === "webp") {
+      buffer = await sharp(buffer).webp({ quality }).toBuffer();
+    } else {
+      // jpeg
+      buffer = await sharp(buffer).jpeg({ quality }).toBuffer();
+    }
 
-    const buffer = await page.screenshot({
-      fullPage: true,
-      type: "jpeg",
-      quality,
-    });
-
-    // 6. Write file
+    // 7. Write file
     const stream = createWriteStream(outFile);
     stream.write(buffer);
     stream.end();
@@ -125,7 +134,7 @@ const maxHeight = values["max-height"]
       console.error("mshot: WARNING — page was taller than --max-height");
     }
 
-    // 7. stdout = path to file
+    // 8. stdout = path to file
     process.stdout.write(outFile + "\n");
   } catch (err) {
     console.error(`mshot: error — ${err.message}`);
