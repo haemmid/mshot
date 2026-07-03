@@ -40,6 +40,12 @@
 3. `README.md` — проверь актуальность
 4. Коммит + тег
 
+## Тесты
+
+- `npm test` — smoke tests (`test/smoke.mjs`, 32 теста)
+- Покрывают: --help, --version, аргументы, url, extension, jpeg/webp/png, fail, atomic write, auto-dir, --no-pre-scroll, --width, --quality, --max-height
+- `npm run check` — lint + format check
+
 ## Линтинг и форматирование
 
 - ESLint 9 flat config (`eslint.config.mjs`) + `eslint-plugin-n` + `eslint-plugin-unicorn`

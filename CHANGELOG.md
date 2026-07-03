@@ -48,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `test/smoke.mjs` — 32 smoke tests (all scenarios covered)
+- `npm test` — run smoke tests
+- `npm link` ready (bin, shebang, executable, deps)
+
 ## [0.1.0] — 2026-07-04
 
 ### Added
