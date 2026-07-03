@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-07-04
+
+### Added
+
+- `--help` and `--version` flags
+- `--wait <ms>` extra wait after load (default 500)
+- PNG output support
+- URL validation (http/https only)
+- Output extension validation (.jpg, .jpeg, .png, .webp)
+- Auto-create output parent directory
+- Atomic output write (tmp file + rename)
+- Clean MSHOT_ERROR messages on stderr
+- Empty stdout on failure
+- MSHOT_LIMITED on stderr for cropped pages
+
+### Changed
+
+- Removed progress logs from stderr (cleaner contract)
+- All errors prefixed with MSHOT_ERROR: on stderr
+
 ## [0.2.0] — 2026-07-04
 
 ### Added

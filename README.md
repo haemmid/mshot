@@ -8,34 +8,51 @@ No fancy analysis — just a fresh browser, navigate, wait, screenshot, done.
 
 ```bash
 npm install -g mshot          # or
-npm install mshot && npx playwright install --with-deps
+npm install mshot && npx playwright install chromium
 ```
 
 ## Usage
 
 ```bash
-mshot --url <url> --out <file> \
-  [--width 1440] \
-  [--quality 82] \
-  [--timeout 30000] \
-  [--max-height 20000]
+mshot --url <url> --out <file> [options]
 ```
 
 ### Options
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--url` | _(required)_ | Target URL |
-| `--out` | _(required)_ | Output file path |
-| `--width` | `1440` | Viewport width in px |
-| `--quality` | `82` | JPEG quality (0–100) |
-| `--timeout` | `30000` | Navigation timeout in ms |
-| `--max-height` | _none_ | Crop to this height (px) if page is taller |
+| `--url <url>` | _(required)_ | Target URL (http:// or https://) |
+| `--out <file>` | _(required)_ | Output .jpg, .jpeg, .png, or .webp |
+| `--width <px>` | `1440` | Viewport width |
+| `--max-height <px>` | _none_ | Crop to this height if page is taller |
+| `--quality <1-100>` | `82` | JPEG/WebP quality |
+| `--timeout <ms>` | `30000` | Page load timeout |
+| `--wait <ms>` | `500` | Extra wait after load |
+| `--version` | | Print version |
+| `--help` | | Show usage |
 
 ### Exit codes
 
-- `0` — success, path written to stdout
-- `1` — failure, diagnostics on stderr
+| Code | Meaning |
+|------|---------|
+| `0` | Success — path written to stdout |
+| `1` | Failure — `MSHOT_ERROR:` on stderr, stdout empty |
+
+### Contract
+
+**Success:**
+```
+stdout: /path/to/file.jpg
+stderr: (empty or MSHOT_LIMITED: warning)
+exit: 0
+```
+
+**Failure:**
+```
+stdout: (empty)
+stderr: MSHOT_ERROR: <reason>
+exit: 1
+```
 
 ### Behavior
 
@@ -43,29 +60,20 @@ mshot --url <url> --out <file> \
 2. Creates new context with specified viewport
 3. Navigates to URL, waits `domcontentloaded`
 4. Waits `networkidle` (10s fallback, proceeds anyway)
-5. Captures full-page screenshot (JPEG or WebP by extension)
-6. If `--max-height` set and page is taller: crops to limit
-7. Writes file, prints path to stdout
+5. Extra wait (`--wait`, default 500ms) for animations
+6. Captures full-page screenshot
+7. If `--max-height` set and page is taller: crops to limit
+8. Atomic write (tmp file → rename)
+9. Auto-creates output parent directory
+10. Prints path to stdout
 
-### Example
+### Examples
 
 ```bash
 mshot --url https://example.com --out example.jpg
-# → /home/user/example.jpg
-```
-
-With height limit:
-
-```bash
-mshot --url https://longpage.com --out page.jpg --max-height 20000
-# → MSHOT_LIMITED: page height 42000px, captured first 20000px
-```
-
-WebP output:
-
-```bash
 mshot --url https://example.com --out example.webp
-# → auto-detects format from extension
+mshot --url https://example.com --out example.jpg --max-height 20000
+mshot --url https://example.com --out example.jpg --width 800 --quality 50
 ```
 
 ## Design philosophy
@@ -75,6 +83,7 @@ mshot --url https://example.com --out example.webp
 - No DOM parsing, no AI, no analysis
 - One URL → one full-page screenshot
 - Predictable, minimal, reliable
+- Agent-safe: clean stdout/stderr contract, atomic writes
 - Later: optional `--script` for interactive states (hover, menus, etc.)
 
 ## License
