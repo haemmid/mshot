@@ -199,7 +199,21 @@ async function main() {
     )
   }
 
-  // 9. atomic write — stale file preserved on fail
+  // 9. --timeout flag works
+  console.log('\n9. --timeout')
+  {
+    const out = run([
+      '--url',
+      'https://example.com',
+      '--out',
+      join(TMP, 'timeout.jpg'),
+      '--timeout',
+      '10000'
+    ])
+    assert(out.trim().endsWith('.jpg'), '--timeout 10000 → success')
+  }
+
+  // 10. atomic write — stale file preserved on fail
   console.log('\n9. atomic write — stale file')
   {
     const stalePath = join(TMP, 'stale.jpg')
@@ -275,7 +289,7 @@ async function main() {
 
   // Summary
   console.log(`\n${'='.repeat(40)}`)
-  console.log(`Results: ${passed} passed, ${failed} failed`)
+  console.log(`Results: ${state.passed} passed, ${state.failed} failed`)
   console.log(`${'='.repeat(40)}\n`)
 
   cleanup()

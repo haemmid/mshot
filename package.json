@@ -1,8 +1,16 @@
 {
   "name": "mshot",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Simple, stable full-page screenshot CLI tool",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "mshot.js",
+    "install-deps.mjs",
+    "README.md"
+  ],
   "bin": {
     "mshot": "./mshot.js"
   },

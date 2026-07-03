@@ -50,9 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `test/smoke.mjs` — 32 smoke tests (all scenarios covered)
+- `test/smoke.mjs` — 33 smoke tests (all scenarios covered)
 - `npm test` — run smoke tests
 - `npm link` ready (bin, shebang, executable, deps)
+- `engines: node >=22` in package.json
+- `files` whitelist in package.json
+- `--timeout` smoke test
 
 ## [0.1.0] — 2026-07-04
 
