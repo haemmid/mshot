@@ -19,28 +19,29 @@ mshot --url <url> --out <file> [options]
 
 ### Options
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--url <url>` | _(required)_ | Target URL (http:// or https://) |
-| `--out <file>` | _(required)_ | Output .jpg, .jpeg, .png, or .webp |
-| `--width <px>` | `1440` | Viewport width |
-| `--max-height <px>` | _none_ | Crop to this height if page is taller |
-| `--quality <1-100>` | `82` | JPEG/WebP quality |
-| `--timeout <ms>` | `30000` | Page load timeout |
-| `--wait <ms>` | `500` | Extra wait after load |
-| `--version` | | Print version |
-| `--help` | | Show usage |
+| Flag                | Default      | Description                           |
+| ------------------- | ------------ | ------------------------------------- |
+| `--url <url>`       | _(required)_ | Target URL (http:// or https://)      |
+| `--out <file>`      | _(required)_ | Output .jpg, .jpeg, .png, or .webp    |
+| `--width <px>`      | `1440`       | Viewport width                        |
+| `--max-height <px>` | _none_       | Crop to this height if page is taller |
+| `--quality <1-100>` | `82`         | JPEG/WebP quality                     |
+| `--timeout <ms>`    | `30000`      | Page load timeout                     |
+| `--wait <ms>`       | `500`        | Extra wait after load                 |
+| `--version`         |              | Print version                         |
+| `--help`            |              | Show usage                            |
 
 ### Exit codes
 
-| Code | Meaning |
-|------|---------|
-| `0` | Success — path written to stdout |
-| `1` | Failure — `MSHOT_ERROR:` on stderr, stdout empty |
+| Code | Meaning                                          |
+| ---- | ------------------------------------------------ |
+| `0`  | Success — path written to stdout                 |
+| `1`  | Failure — `MSHOT_ERROR:` on stderr, stdout empty |
 
 ### Contract
 
 **Success:**
+
 ```
 stdout: /path/to/file.jpg
 stderr: (empty or MSHOT_LIMITED: warning)
@@ -48,6 +49,7 @@ exit: 0
 ```
 
 **Failure:**
+
 ```
 stdout: (empty)
 stderr: MSHOT_ERROR: <reason>

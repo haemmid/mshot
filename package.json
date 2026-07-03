@@ -7,10 +7,34 @@
     "mshot": "./mshot.js"
   },
   "scripts": {
-    "postinstall": "node install-deps.mjs"
+    "postinstall": "node install-deps.mjs",
+    "check": "npm run lint && npm run format",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{md,json}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "playwright": "^1.50.0",
     "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^18.2.1",
+    "eslint-plugin-unicorn": "^70.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.4"
   }
 }

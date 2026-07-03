@@ -40,6 +40,19 @@
 3. `README.md` — проверь актуальность
 4. Коммит + тег
 
+## Линтинг и форматирование
+
+- ESLint 9 flat config (`eslint.config.mjs`) + `eslint-plugin-n` + `eslint-plugin-unicorn`
+- Prettier 3 (2 пробела, single quotes, no semicolons)
+- `eslint-config-prettier` — отключает конфликтующие правила ESLint
+- lint-staged + husky — pre-commit: eslint --fix + prettier --write
+- Команды:
+  - `npm run check` — lint + format check
+  - `npm run lint` — проверка линтером
+  - `npm run lint:fix` — автофикс линтера
+  - `npm run format` — проверка форматирования
+  - `npm run format:write` — автоформатирование
+
 ## Текущая версия
 
 **0.3.0**
