@@ -1,0 +1,15 @@
+{
+  "name": "mshot",
+  "version": "0.1.0",
+  "description": "Simple, stable full-page screenshot CLI tool",
+  "type": "module",
+  "bin": {
+    "mshot": "./mshot.js"
+  },
+  "scripts": {
+    "postinstall": "node install-deps.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.50.0"
+  }
+}
