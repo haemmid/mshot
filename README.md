@@ -2,13 +2,16 @@
 
 Simple, stable full-page screenshot CLI tool.
 
-No fancy analysis — just a fresh browser, navigate, wait, screenshot, done.
+> Not a smart analyzer — a dumb, reliable screenshotter. One URL → one full-page screenshot.
+
+[![npm version](https://img.shields.io/npm/v/mshot.svg)](https://www.npmjs.com/package/mshot)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](https://nodejs.org)
 
 ## Install
 
 ```bash
-npm install -g mshot          # or
-npm install mshot && npx playwright install chromium
+npm install -g mshot
+npx playwright install chromium
 ```
 
 ## Usage
@@ -19,78 +22,47 @@ mshot --url <url> --out <file> [options]
 
 ### Options
 
-| Flag                | Default      | Description                           |
-| ------------------- | ------------ | ------------------------------------- |
-| `--url <url>`       | _(required)_ | Target URL (http:// or https://)      |
-| `--out <file>`      | _(required)_ | Output .jpg, .jpeg, .png, or .webp    |
-| `--width <px>`      | `1440`       | Viewport width                        |
-| `--max-height <px>` | _none_       | Crop to this height if page is taller |
-| `--quality <1-100>` | `82`         | JPEG/WebP quality                     |
-| `--timeout <ms>`    | `30000`      | Page load timeout                     |
-| `--wait <ms>`       | `500`        | Extra wait after load                 |
-| `--no-pre-scroll`   |              | Skip pre-scroll stabilization         |
-| `--version`         |              | Print version                         |
-| `--help`            |              | Show usage                            |
-
-### Exit codes
-
-| Code | Meaning                                          |
-| ---- | ------------------------------------------------ |
-| `0`  | Success — path written to stdout                 |
-| `1`  | Failure — `MSHOT_ERROR:` on stderr, stdout empty |
+| Flag                | Default      | Description                            |
+| ------------------- | ------------ | -------------------------------------- |
+| `--url <url>`       | _(required)_ | Target URL (http/https)                |
+| `--out <file>`      | _(required)_ | Output path (.jpg, .jpeg, .png, .webp) |
+| `--width <px>`      | `1440`       | Viewport width                         |
+| `--max-height <px>` | _none_       | Crop to this height if page is taller  |
+| `--quality <1-100>` | `82`         | JPEG/WebP quality                      |
+| `--timeout <ms>`    | `30000`      | Page load timeout                      |
+| `--wait <ms>`       | `500`        | Extra wait after load                  |
+| `--no-pre-scroll`   |              | Skip pre-scroll stabilization          |
 
 ### Contract
 
-**Success:**
-
 ```
-stdout: /path/to/file.jpg
-stderr: (empty or MSHOT_LIMITED: warning)
-exit: 0
+Success:  stdout = path  |  stderr = empty or MSHOT_LIMITED  |  exit 0
+Failure:  stdout = (empty)  |  stderr = MSHOT_ERROR: ...  |  exit 1
 ```
-
-**Failure:**
-
-```
-stdout: (empty)
-stderr: MSHOT_ERROR: <reason>
-exit: 1
-```
-
-### Behavior
-
-1. Launches fresh Chromium (headless)
-2. Creates new context with specified viewport
-3. Navigates to URL, waits `domcontentloaded`
-4. Waits `networkidle` (10s fallback, proceeds anyway)
-5. **Pre-scrolls** page top→bottom→top (reveals lazy/intersection content)
-6. Best-effort wait for images to load
-7. Extra wait (`--wait`, default 500ms) for animations
-8. Captures full-page screenshot
-9. If `--max-height` set and page is taller: crops to limit
-10. Atomic write (tmp file → rename)
-11. Auto-creates output parent directory
-12. Prints path to stdout
 
 ### Examples
 
 ```bash
 mshot --url https://example.com --out example.jpg
-mshot --url https://example.com --out example.webp
+mshot --url https://example.com --out example.webp --quality 50
 mshot --url https://example.com --out example.jpg --max-height 20000
-mshot --url https://example.com --out example.jpg --width 800 --quality 50
 mshot --url https://example.com --out example.jpg --no-pre-scroll
 ```
 
-## Design philosophy
+## How it works
 
-> Not a smart analyzer — a dumb, stable screenshotter.
+1. Fresh Chromium (headless)
+2. Navigate → wait `domcontentloaded` → `networkidle`
+3. **Pre-scroll** top→bottom→top (reveals lazy images, IntersectionObserver content)
+4. Best-effort image load wait
+5. Full-page screenshot
+6. Atomic write (tmp → rename)
 
-- No DOM parsing, no AI, no analysis
-- One URL → one full-page screenshot
-- Predictable, minimal, reliable
-- Agent-safe: clean stdout/stderr contract, atomic writes
-- Later: optional `--script` for interactive states (hover, menus, etc.)
+## Design
+
+- **Stable over clever** — predictable behavior > smart behavior
+- **Agent-safe** — clean stdout/stderr, atomic writes, no stale files
+- **No DOM parsing, no AI, no analysis** — just screenshot and save
 
 ## License
 
