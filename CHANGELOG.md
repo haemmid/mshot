@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.5.0] — 2026-07-06
+
+### Added
+
+- `batch` subcommand for multi-page capture
+- `--out-dir <dir>` required for batch mode
+- `--viewports <list>` comma-separated viewports (desktop, mobile)
+- `--discover` rendered-link discovery from base page
+- `--max-pages <n>` limit discovered pages (default 12)
+- `--concurrency <n>` parallel captures (default 2)
+- `manifest.json` output with page metadata and screenshot paths
+- `MSHOT_WARN:` for skipped pages and recoverable issues
+- `urlToSafeName()` for deterministic screenshot filenames
+
+### Changed
+
+- Single mode now uses shared `capturePage()` core logic
+
 ## [0.4.0] — 2026-07-04
 
 ### Added
@@ -45,17 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `--max-height` now correctly crops full-page screenshot (was broken with clip)
-
-## [Unreleased]
-
-### Added
-
-- `test/smoke.mjs` — 33 smoke tests (all scenarios covered)
-- `npm test` — run smoke tests
-- `npm link` ready (bin, shebang, executable, deps)
-- `engines: node >=22` in package.json
-- `files` whitelist in package.json
-- `--timeout` smoke test
 
 ## [0.1.0] — 2026-07-04
 

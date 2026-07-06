@@ -287,6 +287,171 @@ async function main() {
     // stderr should contain MSHOT_LIMITED (checked via runErr)
   }
 
+  // ── Batch mode tests ────────────────────────────────────
+
+  // 14. batch --help exits 0
+  console.log('\n14. batch --help')
+  {
+    try {
+      execFileSync('node', [MSHOT, 'batch', '--help'], {
+        cwd: join(__dirname, '..'),
+        timeout: 5000
+      })
+      assert(true, 'batch --help exits 0')
+    } catch {
+      assert(false, 'batch --help exits 0')
+    }
+  }
+
+  // 15. batch missing --out-dir fails
+  console.log('\n15. batch missing --out-dir')
+  {
+    const r = runErr(['batch', '--url', 'https://example.com'])
+    assert(r.exitCode !== 0, 'batch missing --out-dir → exit 1')
+    assert(
+      r.stderr.includes('MSHOT_ERROR'),
+      'batch missing --out-dir → MSHOT_ERROR'
+    )
+    assert(r.stdout.trim() === '', 'batch missing --out-dir → stdout empty')
+  }
+
+  // 16. batch missing --url fails
+  console.log('\n16. batch missing --url')
+  {
+    const r = runErr(['batch', '--out-dir', join(TMP, 'batch1')])
+    assert(r.exitCode !== 0, 'batch missing --url → exit 1')
+    assert(
+      r.stderr.includes('MSHOT_ERROR'),
+      'batch missing --url → MSHOT_ERROR'
+    )
+  }
+
+  // 17. batch without --discover captures only base page
+  console.log('\n17. batch without --discover')
+  {
+    const batchDir = join(TMP, 'batch1')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir
+    ])
+    const manifestPath = out.trim()
+    assert(manifestPath.endsWith('manifest.json'), 'stdout = manifest path')
+    assert(existsSync(manifestPath), 'manifest exists')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    assert(manifest.pages.length === 1, 'manifest has 1 page')
+    assert(manifest.pages[0].source === 'base', 'page source is base')
+    assert(
+      existsSync(join(batchDir, manifest.pages[0].screenshots.desktop)),
+      'desktop screenshot exists'
+    )
+  }
+
+  // 18. batch with --discover captures base + links
+  console.log('\n18. batch with --discover')
+  {
+    const batchDir = join(TMP, 'batch2')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--discover',
+      '--max-pages',
+      '5'
+    ])
+    const manifestPath = out.trim()
+    assert(manifestPath.endsWith('manifest.json'), 'stdout = manifest path')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    assert(manifest.pages.length > 0, 'manifest has at least 1 page')
+    assert(manifest.pages[0].source === 'base', 'first page is base')
+  }
+
+  // 19. batch --viewports desktop,mobile
+  console.log('\n19. batch --viewports desktop,mobile')
+  {
+    const batchDir = join(TMP, 'batch3')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--viewports',
+      'desktop,mobile'
+    ])
+    const manifestPath = out.trim()
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const page = manifest.pages[0]
+    assert(page.screenshots.desktop, 'has desktop screenshot')
+    assert(page.screenshots.mobile, 'has mobile screenshot')
+    assert(
+      existsSync(join(batchDir, page.screenshots.desktop)),
+      'desktop file exists'
+    )
+    assert(
+      existsSync(join(batchDir, page.screenshots.mobile)),
+      'mobile file exists'
+    )
+  }
+
+  // 20. batch --max-pages 1 captures only base
+  console.log('\n20. batch --max-pages 1')
+  {
+    const batchDir = join(TMP, 'batch4')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--discover',
+      '--max-pages',
+      '1'
+    ])
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
+    assert(manifest.pages.length === 1, 'manifest has 1 page')
+    assert(manifest.pages[0].source === 'base', 'only base page')
+  }
+
+  // 21. batch --max-height with batch
+  console.log('\n21. batch --max-height')
+  {
+    const batchDir = join(TMP, 'batch5')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--max-height',
+      '5000'
+    ])
+    const manifestPath = out.trim()
+    assert(existsSync(manifestPath), 'manifest exists with --max-height')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    assert(manifest.pages.length > 0, 'pages captured with --max-height')
+  }
+
+  // 22. batch stdout is exactly manifest path
+  console.log('\n22. batch stdout contract')
+  {
+    const batchDir = join(TMP, 'batch6')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir
+    ])
+    const lines = out.trim().split('\n')
+    assert(lines.length === 1, 'stdout is single line')
+    assert(lines[0].endsWith('manifest.json'), 'stdout is manifest path')
+  }
+
   // Summary
   console.log(`\n${'='.repeat(40)}`)
   console.log(`Results: ${state.passed} passed, ${state.failed} failed`)
