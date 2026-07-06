@@ -29,7 +29,16 @@ function assert(condition, label) {
   }
 }
 
-function run(args, expectExit = 0) {
+// ── Helpers ───────────────────────────────────────────────
+function setup() {
+  if (!existsSync(TMP)) mkdirSync(TMP, { recursive: true })
+}
+
+function cleanup() {
+  if (existsSync(TMP)) rmSync(TMP, { recursive: true, force: true })
+}
+
+function run(args) {
   const result = execFileSync('node', [MSHOT, ...args], {
     cwd: join(__dirname, '..'),
     encoding: 'utf8',
@@ -56,47 +65,31 @@ function runErr(args) {
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────
-function setup() {
-  if (!existsSync(TMP)) {
-    mkdirSync(TMP, { recursive: true })
-  }
-}
-
-function cleanup() {
-  if (existsSync(TMP)) {
-    rmSync(TMP, { recursive: true, force: true })
-  }
-}
-
 // ── Tests ─────────────────────────────────────────────────
 async function main() {
   setup()
 
-  // 1. --help exits 0
+  // ── 1. --help / --version ───────────────────────────────
   console.log('\n1. --help / --version')
-  try {
-    execFileSync('node', [MSHOT, '--help'], {
-      cwd: join(__dirname, '..'),
-      timeout: 5000
-    })
-    assert(true, '--help exits 0')
-  } catch {
-    assert(false, '--help exits 0')
-  }
-
-  try {
+  {
+    try {
+      execFileSync('node', [MSHOT, '--help'], {
+        cwd: join(__dirname, '..'),
+        timeout: 5000
+      })
+      assert(true, '--help exits 0')
+    } catch {
+      assert(false, '--help exits 0')
+    }
     const out = execFileSync('node', [MSHOT, '--version'], {
       cwd: join(__dirname, '..'),
       encoding: 'utf8',
       timeout: 5000
     }).trim()
     assert(out.startsWith('0.'), `--version prints ${out}`)
-  } catch {
-    assert(false, '--version exits 0')
   }
 
-  // 2. missing required args
+  // ── 2. missing required args ────────────────────────────
   console.log('\n2. missing required args')
   {
     const r = runErr(['--out', '/tmp/x.jpg'])
@@ -109,7 +102,7 @@ async function main() {
     assert(r.stderr.includes('MSHOT_ERROR'), 'missing --out → MSHOT_ERROR')
   }
 
-  // 3. invalid url
+  // ── 3. invalid url ──────────────────────────────────────
   console.log('\n3. invalid url')
   {
     const r = runErr(['--url', 'file:///tmp/x', '--out', '/tmp/x.jpg'])
@@ -117,7 +110,7 @@ async function main() {
     assert(r.stderr.includes('MSHOT_ERROR'), 'file:// url → MSHOT_ERROR')
   }
 
-  // 4. invalid extension
+  // ── 4. invalid extension ────────────────────────────────
   console.log('\n4. invalid extension')
   {
     const r = runErr(['--url', 'https://example.com', '--out', '/tmp/x.gif'])
@@ -130,7 +123,7 @@ async function main() {
     assert(r.stderr.includes('MSHOT_ERROR'), 'no ext → MSHOT_ERROR')
   }
 
-  // 5. success — JPEG
+  // ── 5. success — JPEG ───────────────────────────────────
   console.log('\n5. success — JPEG')
   {
     const out = run([
@@ -147,7 +140,7 @@ async function main() {
     assert(content.length > 1000, 'file has reasonable size')
   }
 
-  // 6. success — WebP
+  // ── 6. success — WebP ───────────────────────────────────
   console.log('\n6. success — WebP')
   {
     const out = run([
@@ -166,7 +159,7 @@ async function main() {
     )
   }
 
-  // 7. success — PNG
+  // ── 7. success — PNG ────────────────────────────────────
   console.log('\n7. success — PNG')
   {
     const out = run([
@@ -182,7 +175,7 @@ async function main() {
     assert(content[0] === 0x89 && content[1] === 0x50, 'file is valid PNG')
   }
 
-  // 8. fail — bad domain, stdout empty, stderr MSHOT_ERROR
+  // ── 8. fail — bad domain ────────────────────────────────
   console.log('\n8. fail — bad domain')
   {
     const r = runErr([
@@ -199,7 +192,7 @@ async function main() {
     )
   }
 
-  // 9. --timeout flag works
+  // ── 9. --timeout ────────────────────────────────────────
   console.log('\n9. --timeout')
   {
     const out = run([
@@ -213,25 +206,23 @@ async function main() {
     assert(out.trim().endsWith('.jpg'), '--timeout 10000 → success')
   }
 
-  // 10. atomic write — stale file preserved on fail
-  console.log('\n9. atomic write — stale file')
+  // ── 10. atomic write — stale file preserved on fail ─────
+  console.log('\n10. atomic write — stale file')
   {
     const stalePath = join(TMP, 'stale.jpg')
     writeFileSync(stalePath, 'OLD_CONTENT')
-
     runErr([
       '--url',
       'https://this-domain-does-not-exist-xyz.invalid',
       '--out',
       stalePath
     ])
-
     const content = readFileSync(stalePath, 'utf8')
     assert(content === 'OLD_CONTENT', 'stale file preserved on fail')
   }
 
-  // 10. auto-create output directory
-  console.log('\n10. auto-create output dir')
+  // ── 11. auto-create output dir ──────────────────────────
+  console.log('\n11. auto-create output dir')
   {
     const deepPath = join(TMP, 'deep', 'nested', 'dir', 'snap.jpg')
     const out = run(['--url', 'https://example.com', '--out', deepPath])
@@ -239,8 +230,8 @@ async function main() {
     assert(existsSync(deepPath), 'deep file exists')
   }
 
-  // 11. --no-pre-scroll works
-  console.log('\n11. --no-pre-scroll')
+  // ── 12. --no-pre-scroll ─────────────────────────────────
+  console.log('\n12. --no-pre-scroll')
   {
     const out = run([
       '--url',
@@ -252,8 +243,8 @@ async function main() {
     assert(out.trim().endsWith('.jpg'), '--no-pre-scroll → success')
   }
 
-  // 12. --width and --quality
-  console.log('\n12. --width and --quality')
+  // ── 13. --width and --quality ───────────────────────────
+  console.log('\n13. --width and --quality')
   {
     const out = run([
       '--url',
@@ -271,8 +262,8 @@ async function main() {
     assert(s.size < 50_000, 'low quality → smaller file')
   }
 
-  // 13. limited success — --max-height
-  console.log('\n13. --max-height (limited)')
+  // ── 14. --max-height (limited) ──────────────────────────
+  console.log('\n14. --max-height (limited)')
   {
     const out = run([
       '--url',
@@ -284,13 +275,12 @@ async function main() {
     ])
     const filePath = out.trim()
     assert(existsSync(filePath), 'limited → file exists')
-    // stderr should contain MSHOT_LIMITED (checked via runErr)
   }
 
   // ── Batch mode tests ────────────────────────────────────
 
-  // 14. batch --help exits 0
-  console.log('\n14. batch --help')
+  // ── 15. batch --help ────────────────────────────────────
+  console.log('\n15. batch --help')
   {
     try {
       execFileSync('node', [MSHOT, 'batch', '--help'], {
@@ -303,8 +293,8 @@ async function main() {
     }
   }
 
-  // 15. batch missing --out-dir fails
-  console.log('\n15. batch missing --out-dir')
+  // ── 16. batch missing --out-dir ─────────────────────────
+  console.log('\n16. batch missing --out-dir')
   {
     const r = runErr(['batch', '--url', 'https://example.com'])
     assert(r.exitCode !== 0, 'batch missing --out-dir → exit 1')
@@ -315,8 +305,8 @@ async function main() {
     assert(r.stdout.trim() === '', 'batch missing --out-dir → stdout empty')
   }
 
-  // 16. batch missing --url fails
-  console.log('\n16. batch missing --url')
+  // ── 17. batch missing --url ─────────────────────────────
+  console.log('\n17. batch missing --url')
   {
     const r = runErr(['batch', '--out-dir', join(TMP, 'batch1')])
     assert(r.exitCode !== 0, 'batch missing --url → exit 1')
@@ -326,8 +316,8 @@ async function main() {
     )
   }
 
-  // 17. batch without --discover captures only base page
-  console.log('\n17. batch without --discover')
+  // ── 18. batch without --discover ────────────────────────
+  console.log('\n18. batch without --discover')
   {
     const batchDir = join(TMP, 'batch1')
     const out = run([
@@ -349,8 +339,8 @@ async function main() {
     )
   }
 
-  // 18. batch with --discover captures base + links
-  console.log('\n18. batch with --discover')
+  // ── 19. batch with --discover ───────────────────────────
+  console.log('\n19. batch with --discover')
   {
     const batchDir = join(TMP, 'batch2')
     const out = run([
@@ -370,8 +360,8 @@ async function main() {
     assert(manifest.pages[0].source === 'base', 'first page is base')
   }
 
-  // 19. batch --viewports desktop,mobile
-  console.log('\n19. batch --viewports desktop,mobile')
+  // ── 20. batch --viewports desktop,mobile ────────────────
+  console.log('\n20. batch --viewports desktop,mobile')
   {
     const batchDir = join(TMP, 'batch3')
     const out = run([
@@ -383,8 +373,7 @@ async function main() {
       '--viewports',
       'desktop,mobile'
     ])
-    const manifestPath = out.trim()
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
     const page = manifest.pages[0]
     assert(page.screenshots.desktop, 'has desktop screenshot')
     assert(page.screenshots.mobile, 'has mobile screenshot')
@@ -398,8 +387,8 @@ async function main() {
     )
   }
 
-  // 20. batch --max-pages 1 captures only base
-  console.log('\n20. batch --max-pages 1')
+  // ── 21. batch --max-pages 1 ─────────────────────────────
+  console.log('\n21. batch --max-pages 1')
   {
     const batchDir = join(TMP, 'batch4')
     const out = run([
@@ -417,8 +406,8 @@ async function main() {
     assert(manifest.pages[0].source === 'base', 'only base page')
   }
 
-  // 21. batch --max-height with batch
-  console.log('\n21. batch --max-height')
+  // ── 22. batch --max-height with batch ───────────────────
+  console.log('\n22. batch --max-height')
   {
     const batchDir = join(TMP, 'batch5')
     const out = run([
@@ -436,8 +425,8 @@ async function main() {
     assert(manifest.pages.length > 0, 'pages captured with --max-height')
   }
 
-  // 22. batch stdout is exactly manifest path
-  console.log('\n22. batch stdout contract')
+  // ── 23. batch stdout contract ───────────────────────────
+  console.log('\n23. batch stdout contract')
   {
     const batchDir = join(TMP, 'batch6')
     const out = run([
@@ -452,7 +441,142 @@ async function main() {
     assert(lines[0].endsWith('manifest.json'), 'stdout is manifest path')
   }
 
-  // Summary
+  // ── 24. batch route dedupe ──────────────────────────────
+  console.log('\n24. batch route dedupe')
+  {
+    const batchDir = join(TMP, 'batch7')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--discover',
+      '--max-pages',
+      '10'
+    ])
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
+    assert(manifest.pages.length > 0, 'dedupe: at least 1 page')
+    assert(typeof manifest.skipped === 'object', 'dedupe: skipped array exists')
+  }
+
+  // ── 25. batch --no-route-dedupe ─────────────────────────
+  console.log('\n25. batch --no-route-dedupe')
+  {
+    const batchDir = join(TMP, 'batch8')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--discover',
+      '--max-pages',
+      '10',
+      '--no-route-dedupe'
+    ])
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
+    assert(manifest.pages.length > 0, 'no-dedupe: at least 1 page')
+  }
+
+  // ── 26. batch --networkidle-timeout ─────────────────────
+  console.log('\n26. batch --networkidle-timeout')
+  {
+    const batchDir = join(TMP, 'batch9')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--networkidle-timeout',
+      '2000'
+    ])
+    const manifestPath = out.trim()
+    assert(existsSync(manifestPath), 'manifest exists with custom timeout')
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    assert(manifest.pages.length > 0, 'pages captured with custom timeout')
+  }
+
+  // ── 27. batch --max-per-pattern ─────────────────────────
+  console.log('\n27. batch --max-per-pattern')
+  {
+    const batchDir = join(TMP, 'batch10')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--discover',
+      '--max-pages',
+      '10',
+      '--max-per-pattern',
+      '2'
+    ])
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
+    assert(manifest.pages.length > 0, 'max-per-pattern: at least 1 page')
+  }
+
+  // ── 28. batch --depth 1 ─────────────────────────────────
+  console.log('\n28. batch --depth 1')
+  {
+    const batchDir = join(TMP, 'batch11')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--discover',
+      '--depth',
+      '1'
+    ])
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
+    assert(manifest.pages.length > 0, 'depth 1: at least 1 page')
+  }
+
+  // ── 29. batch --depth 2 ─────────────────────────────────
+  console.log('\n29. batch --depth 2')
+  {
+    const batchDir = join(TMP, 'batch12')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--discover',
+      '--depth',
+      '2',
+      '--max-pages',
+      '5'
+    ])
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
+    assert(manifest.pages.length > 0, 'depth 2: at least 1 page')
+  }
+
+  // ── 30. manifest timings ────────────────────────────────
+  console.log('\n30. manifest timings')
+  {
+    const batchDir = join(TMP, 'batch13')
+    const out = run([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir
+    ])
+    const manifest = JSON.parse(readFileSync(out.trim(), 'utf8'))
+    const page = manifest.pages[0]
+    assert(typeof page.timings === 'object', 'manifest page has timings object')
+    assert(
+      page.timings.gotoMs !== undefined || page.timings.totalMs !== undefined,
+      'timings include at least gotoMs or totalMs'
+    )
+  }
+
+  // ── Summary ─────────────────────────────────────────────
   console.log(`\n${'='.repeat(40)}`)
   console.log(`Results: ${state.passed} passed, ${state.failed} failed`)
   console.log(`${'='.repeat(40)}\n`)

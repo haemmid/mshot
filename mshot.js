@@ -129,10 +129,14 @@ async function runBatchMode(values) {
     waitMs: parsed.waitMs,
     maxHeight: parsed.maxHeight,
     isPreScrollEnabled: parsed.isPreScrollEnabled,
+    networkidleTimeout: parsed.networkidleTimeout,
     discover: parsed.discover,
     maxPages: parsed.maxPages,
     concurrency: parsed.concurrency,
-    viewports: parsed.viewports
+    viewports: parsed.viewports,
+    routeDedupe: parsed.routeDedupe,
+    maxPerPattern: parsed.maxPerPattern,
+    depth: parsed.depth
   }
 
   const result = await runBatch(batchOpts)
