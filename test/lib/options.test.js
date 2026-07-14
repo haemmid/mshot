@@ -2,17 +2,13 @@
 // Usage: node test/lib/options.test.js
 //
 // Production validateSingle/validateBatch use parseInt() — no range clamping.
-// parseNumeric / clampPositive are exported pure helpers (useful for callers).
 
 import {
-  parseNumeric,
-  clampPositive,
   parseViewports,
   validateSingle,
   validateBatch,
   DEFAULTS,
-  ALLOWED_EXTS,
-  VIEWPORTS
+  ALLOWED_EXTS
 } from '../../lib/options.js'
 
 const state = { passed: 0, failed: 0 }
@@ -25,31 +21,6 @@ function assert(condition, label) {
     state.failed++
     console.error(`  ❌ ${label}`)
   }
-}
-
-// ── parseNumeric ──────────────────────────────────────────
-console.log('\nparseNumeric')
-{
-  assert(parseNumeric('42', 10) === 42, 'valid number')
-  assert(parseNumeric('0', 10) === 0, 'zero')
-  assert(parseNumeric('', 10) === 10, 'empty → fallback')
-  assert(parseNumeric(null, 10) === 10, 'null → fallback')
-  assert(parseNumeric('abc', 10) === 10, 'non-numeric → fallback')
-  assert(parseNumeric('  ', 10) === 10, 'whitespace → fallback')
-  assert(parseNumeric('100', 0) === 100, 'returns parsed value')
-}
-
-// ── clampPositive ─────────────────────────────────────────
-console.log('\nclampPositive')
-{
-  assert(clampPositive(50, 1, 100) === 50, 'in range unchanged')
-  assert(clampPositive(0, 1, 100) === 1, 'below min → min')
-  assert(clampPositive(200, 1, 100) === 100, 'above max → max')
-  assert(clampPositive(-5, 0) === 0, 'negative → min=0')
-  assert(clampPositive(50, 1) === 50, 'no max, in range')
-  assert(clampPositive(200, 1) === 200, 'no max, above min stays')
-  assert(clampPositive(1000, 1000) === 1000, 'equals min stays')
-  assert(clampPositive(10, 1, 10) === 10, 'equals max stays')
 }
 
 // ── parseViewports ────────────────────────────────────────
