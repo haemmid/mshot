@@ -38,6 +38,43 @@ mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --discover 
 mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --viewports desktop,mobile --max-height 900
 ```
 
+#### Explicit URL list (`--urls-file`)
+
+For deterministic capture of specific routes (e.g. important app screens),
+use `--urls-file` with a plain text file — one URL or path per line:
+
+```bash
+mshot batch --url http://localhost:4321 --out-dir tmp/visual-capture --urls-file .mshot/visual-routes.txt
+mshot batch --url http://localhost:4321 --out-dir tmp/visual-capture --urls-file .mshot/visual-routes.txt --discover --max-pages 12
+```
+
+File format (plain text, one entry per line):
+
+```
+/
+# important app screens
+/projects
+/project/demo/errors
+http://localhost:4321/settings
+```
+
+Rules:
+
+- Empty lines and lines starting with `#` are ignored
+- Leading/trailing whitespace is trimmed
+- Relative paths (starting with `/`) are resolved against `--url`
+- Absolute URLs are allowed only if same-origin as `--url`
+- Hash fragments are stripped
+- Exact duplicates are removed
+- External origins are skipped (recorded in `manifest.json` `skipped[]`)
+
+With `--urls-file`:
+
+- Explicit input URLs are captured first, before any discovered URLs
+- Explicit input URLs are **not** removed by route pattern deduplication
+- If `--discover` is also used, discovered URLs fill remaining `--max-pages` slots
+- If `--urls-file` is not specified, behavior is unchanged (base URL + optional discover)
+
 ### Options
 
 | Flag                         | Default      | Description                                               |
@@ -59,12 +96,7 @@ mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --viewports
 | `--max-per-pattern <n>`      | `1`          | Max URLs per route pattern (dedupe)                       |
 | `--no-route-dedupe`          |              | Disable route pattern deduplication                       |
 | `--depth <n>`                | `1`          | Link discovery depth: 1 = base only, 2 = one level deeper |
-| `--width <px>`               | `1440`       | Viewport width                                            |
-| `--max-height <px>`          | _none_       | Crop to this height if page is taller                     |
-| `--quality <1-100>`          | `82`         | JPEG/WebP quality                                         |
-| `--timeout <ms>`             | `30000`      | Page load timeout                                         |
-| `--wait <ms>`                | `500`        | Extra wait after load                                     |
-| `--no-pre-scroll`            |              | Skip pre-scroll stabilization                             |
+| `--urls-file <file>`         |              | Explicit URL/path list (plain text, one per line)         |
 
 ### Contract
 
@@ -93,6 +125,7 @@ mshot --url https://example.com --out example.jpg --no-pre-scroll
 mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture
 mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --discover --max-pages 12
 mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --viewports desktop,mobile --max-height 900
+mshot batch --url http://localhost:4321 --out-dir tmp/visual-capture --urls-file .mshot/visual-routes.txt
 ```
 
 ### Batch: manifest.json
@@ -101,6 +134,7 @@ Batch mode writes a `manifest.json` to `--out-dir`:
 
 ```jsonc
 {
+  "manifestVersion": 1,
   "baseUrl": "http://localhost:3079",
   "createdAt": "2026-07-06T...",
   "viewports": { "desktop": { "width": 1440 }, "mobile": { "width": 390 } },
@@ -131,10 +165,11 @@ Batch mode writes a `manifest.json` to `--out-dir`:
 ```
 
 - `pages[]` — captured pages with screenshot paths and timings
-- `skipped[]` — failed pages or deduplicated duplicates
+- `skipped[]` — failed pages, deduplicated duplicates, or overflow from `--max-pages`
 - `viewports[]` — viewport definitions
 - First page is always the base URL (source: `base`)
 - Discovered links have source: `rendered-link`
+- Explicit input URLs (from `--urls-file`) have source: `input`
 - Same-origin only, no assets/mailto/tel/hash links
 
 #### Route pattern deduplication

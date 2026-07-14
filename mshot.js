@@ -136,7 +136,8 @@ async function runBatchMode(values) {
     viewports: parsed.viewports,
     routeDedupe: parsed.routeDedupe,
     maxPerPattern: parsed.maxPerPattern,
-    depth: parsed.depth
+    depth: parsed.depth,
+    urlsFile: parsed.urlsFile
   }
 
   const result = await runBatch(batchOpts)

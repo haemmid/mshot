@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `test/lib/options.test.js` — unit tests for `lib/options.js` (104 asserts, no browser)
+- `test/smoke/helpers.mjs` — shared helpers for smoke tests (CLI runner, assertions, temp dir, manifest)
+- `test/smoke/quick.mjs` — representative CLI contract smoke (~15s, ~5 Chromium launches)
+- `test/smoke/full.mjs` — full browser regression suite (~75s, ~21 Chromium launches)
+- `test/package/smoke.mjs` — package/installation smoke test
+- `parseNumeric()` and `clampPositive()` pure helpers in `lib/options.js` (exported for callers, not used internally)
+
+### Changed
+
+- Test suite restructured: `test/smoke.mjs` → `test/smoke/quick.mjs` + `test/smoke/full.mjs`
+- `npm test` now runs unit + quick smoke (~15s) instead of full smoke (~90s)
+- `npm run verify`, `npm run verify:full`, `npm run verify:release` added
+
+### Removed
+
+- `test/smoke.mjs` — replaced by `quick.mjs` and `full.mjs`
+
+## [0.6.1] — 2026-07-07
+
+## [0.6.1] — 2026-07-07
+
+### Fixed
+
+- `package.json.files` — добавлен `"lib/"`, опубликованный пакет теперь содержит модули
+- CLI help — `--max-pages` показывал `default 1440` (копировал `DEFAULTS.width`), исправлено на `default 12`
+- Убран дублирующий `--route-dedupe` из `parseArgsConfig`, публично документирован только `--no-route-dedupe`
+
+### Added
+
+- `manifestVersion: 1` в `manifest.json` для будущей эволюции формата
+
+## [0.6.0] — 2026-07-07
+
+### Added
+
+- `--urls-file <file>` for deterministic batch capture by explicit URL/path list
+- Plain text urls-file: one URL or path per line, comments (`#`), blank lines supported
+- `source: "input"` in manifest for URLs from `--urls-file`
+- `manifest.json` `skipped[]` entries for external-origin, non-http, and `max-pages` overflow
+- `filterDuplicateCandidates()` to prevent input URLs from being deduped by discovered URLs
+- Unit tests for `lib/url-list.js` (comments, blanks, relative paths, same-origin, external, hash removal, duplicates)
+
+### Changed
+
+- Explicit input URLs are captured first and are never removed by route pattern deduplication
+- `--discover` fills remaining `--max-pages` slots after input URLs
+- `--max-pages` overflow now records `reason: "max-pages"` in `skipped[]`
+
 ## [0.5.0] — 2026-07-06
 
 ### Added
