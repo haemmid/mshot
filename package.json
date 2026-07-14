@@ -1,6 +1,6 @@
 {
   "name": "mshot",
-  "version": "0.5.0",
+  "version": "0.6.1",
   "description": "Simple, stable full-page screenshot CLI tool",
   "type": "module",
   "engines": {
@@ -9,6 +9,7 @@
   "files": [
     "mshot.js",
     "install-deps.mjs",
+    "lib/",
     "README.md"
   ],
   "bin": {
@@ -22,7 +23,14 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "prepare": "husky",
-    "test": "node test/smoke.mjs"
+    "test": "node test/lib/options.test.js && node test/lib/route-patterns.test.js && node test/lib/url-list.test.js && node test/smoke/quick.mjs",
+    "test:unit": "node test/lib/options.test.js && node test/lib/route-patterns.test.js && node test/lib/url-list.test.js",
+    "test:smoke": "node test/smoke/quick.mjs",
+    "test:full": "node test/lib/options.test.js && node test/lib/route-patterns.test.js && node test/lib/url-list.test.js && node test/smoke/full.mjs",
+    "test:package": "node test/package/smoke.mjs",
+    "verify": "npm run check && npm test",
+    "verify:full": "npm run check && npm run test:full",
+    "verify:release": "npm run check && npm run test:full && npm run test:package"
   },
   "lint-staged": {
     "*.{js,mjs}": [
