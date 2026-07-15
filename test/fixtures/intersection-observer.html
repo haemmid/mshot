@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>IntersectionObserver Reveal Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      .hidden-el {
+        opacity: 0;
+        transition: opacity 0.3s;
+        background: #f0f0f0;
+        padding: 20px;
+        margin: 10px 0;
+        height: 100px;
+      }
+      .hidden-el.revealed {
+        opacity: 1;
+      }
+      .spacer {
+        height: 2000px;
+        background: #eee;
+      }
+      #target {
+        border: 2px solid red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>IntersectionObserver Reveal Test</h1>
+    <p>Scroll down to reveal elements.</p>
+    <div class="spacer"></div>
+    <div id="target" class="hidden-el">
+      <h2>I was revealed by IntersectionObserver!</h2>
+      <p>This element should become visible after scroll.</p>
+    </div>
+    <script>
+      const observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('revealed')
+              observer.unobserve(entry.target)
+            }
+          })
+        },
+        { threshold: 0.1 }
+      )
+      observer.observe(document.getElementById('target'))
+    </script>
+  </body>
+</html>

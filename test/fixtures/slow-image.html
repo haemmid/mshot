@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Slow Image Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      img {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Slow Image Test</h1>
+    <p>This page has a slow-loading image.</p>
+    <img
+      src="http://localhost:1/no-such-file.jpg"
+      alt="slow image"
+      id="slow-img"
+    />
+    <div id="status">Image status: loading</div>
+    <script>
+      const img = document.getElementById('slow-img')
+      img.onload = () => {
+        document.getElementById('status').textContent = 'Image loaded!'
+      }
+      img.onerror = () => {
+        document.getElementById('status').textContent =
+          'Image failed to load (expected)'
+      }
+    </script>
+  </body>
+</html>

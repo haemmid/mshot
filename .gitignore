@@ -3,5 +3,5 @@ node_modules/
 *.jpg
 *.jpeg
 *.webp
-.tmp-smoke/
+.tmp-smoke*/
 .tmp-url-list-test/

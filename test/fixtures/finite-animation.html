@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Finite Animation Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      .box {
+        width: 100px;
+        height: 100px;
+        background: blue;
+        animation: slide 1s ease-out forwards;
+      }
+      @keyframes slide {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(200px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Finite Animation Test</h1>
+    <p>This box slides once and stops.</p>
+    <div class="box" id="box"></div>
+    <div id="status">Animation: running</div>
+    <script>
+      const box = document.getElementById('box')
+      const status = document.getElementById('status')
+      box.addEventListener('animationend', () => {
+        status.textContent = 'Animation: finished'
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Delayed Image Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      img {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Delayed Image Test</h1>
+    <p>This image loads after a server-side delay.</p>
+    <img src="/delayed.jpg" alt="delayed image" id="delayed-img" />
+    <div id="status">Image status: loading</div>
+    <script>
+      const img = document.getElementById('delayed-img')
+      const status = document.getElementById('status')
+      img.onload = () => {
+        status.textContent = 'Image loaded!'
+      }
+      img.onerror = () => {
+        status.textContent = 'Image failed'
+      }
+    </script>
+  </body>
+</html>

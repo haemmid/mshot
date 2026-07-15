@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Font Ready Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      #status {
+        font-size: 24px;
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Font Ready Test</h1>
+    <p>This page tests that document.fonts.ready is available.</p>
+    <div id="status">Loading...</div>
+    <script>
+      document.fonts.ready.then(() => {
+        document.getElementById('status').textContent = 'Fonts loaded!'
+      })
+    </script>
+  </body>
+</html>

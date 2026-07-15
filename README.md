@@ -88,6 +88,8 @@ With `--urls-file`:
 | `--timeout <ms>`             | `30000`      | Page load timeout                                         |
 | `--wait <ms>`                | `500`        | Extra wait after load                                     |
 | `--no-pre-scroll`            |              | Skip pre-scroll stabilization                             |
+| `--no-settle`                |              | Skip font/image settle and animation normalization        |
+| `--settle-timeout <ms>`      | `3000`       | Settle timeout ceiling (not a fixed sleep)                |
 | `--viewports <list>`         | `desktop`    | Comma-separated: desktop, mobile                          |
 | `--discover`                 | `false`      | Discover rendered links from base page                    |
 | `--max-pages <n>`            | `12`         | Max pages to capture                                      |
@@ -122,10 +124,13 @@ mshot --url https://example.com --out example.jpg
 mshot --url https://example.com --out example.webp --quality 50
 mshot --url https://example.com --out example.jpg --max-height 20000
 mshot --url https://example.com --out example.jpg --no-pre-scroll
+mshot --url https://example.com --out example.jpg --no-settle
+mshot --url https://example.com --out example.jpg --settle-timeout 1000
 mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture
 mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --discover --max-pages 12
 mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --viewports desktop,mobile --max-height 900
 mshot batch --url http://localhost:4321 --out-dir tmp/visual-capture --urls-file .mshot/visual-routes.txt
+mshot batch --url http://localhost:4321 --out-dir tmp/visual-capture --urls-file .mshot/visual-routes.txt --no-settle
 ```
 
 ### Batch: manifest.json
@@ -147,6 +152,7 @@ Batch mode writes a `manifest.json` to `--out-dir`:
         "gotoMs": 120,
         "networkidleMs": 80,
         "preScrollMs": 3500,
+        "fontWaitMs": 15,
         "imageWaitMs": 50,
         "screenshotMs": 200,
         "totalMs": 4000
@@ -171,6 +177,18 @@ Batch mode writes a `manifest.json` to `--out-dir`:
 - Discovered links have source: `rendered-link`
 - Explicit input URLs (from `--urls-file`) have source: `input`
 - Same-origin only, no assets/mailto/tel/hash links
+
+#### Timings
+
+Each page record includes timing breakdown:
+
+- `gotoMs` — navigation time
+- `networkidleMs` — `networkidle` wait time
+- `preScrollMs` — pre-scroll time (if enabled)
+- `fontWaitMs` — font settle time (if settle enabled)
+- `imageWaitMs` — image settle time (if settle enabled)
+- `screenshotMs` — screenshot capture time
+- `totalMs` — total capture time
 
 #### Route pattern deduplication
 
@@ -210,9 +228,10 @@ mshot batch \
 1. Fresh Chromium (headless)
 2. Navigate → wait `domcontentloaded` → `networkidle`
 3. **Pre-scroll** top→bottom→top (reveals lazy images, IntersectionObserver content)
-4. Best-effort image load wait
-5. Full-page screenshot
-6. Atomic write (tmp → rename)
+4. **Settle** — best-effort wait for `document.fonts.ready` and `<img>` load (ceiling: `--settle-timeout`)
+5. Optional `--wait <ms>` extra pause
+6. Full-page screenshot with `animations: 'disabled'`
+7. Atomic write (tmp → rename)
 
 ## Design
 

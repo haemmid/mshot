@@ -22,6 +22,13 @@ import { capturePage } from './lib/capture.js'
 import { createOutputDir, writeBuffer } from './lib/output.js'
 import { runBatch } from './lib/batch.js'
 
+// Playwright page.screenshot() internally waits for document.fonts.ready,
+// which is unbounded when a slow <img> or <font> request is pending.
+// mshot already performs its own bounded settle wait (fonts + images),
+// so this compatibility flag bypasses the duplicate unbounded wait.
+// Regression-tested with slow-resource fixtures.
+process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1'
+
 const VERSION = JSON.parse(
   readFileSync(new URL('package.json', import.meta.url), 'utf8')
 ).version
@@ -104,7 +111,10 @@ async function runSingle(values) {
       timeout,
       waitMs,
       maxHeight,
-      isPreScrollEnabled
+      isPreScrollEnabled,
+      isSettleEnabled: parsed.isSettleEnabled,
+      settleTimeout: parsed.settleTimeout,
+      networkidleTimeout: parsed.networkidleTimeout
     })
 
     const result = await writeBuffer(buffer, outFile)
@@ -129,6 +139,8 @@ async function runBatchMode(values) {
     waitMs: parsed.waitMs,
     maxHeight: parsed.maxHeight,
     isPreScrollEnabled: parsed.isPreScrollEnabled,
+    isSettleEnabled: parsed.isSettleEnabled,
+    settleTimeout: parsed.settleTimeout,
     networkidleTimeout: parsed.networkidleTimeout,
     discover: parsed.discover,
     maxPages: parsed.maxPages,

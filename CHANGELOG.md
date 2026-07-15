@@ -7,26 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-07-15
+
 ### Added
 
-- `test/lib/options.test.js` — unit tests for `lib/options.js` (104 asserts, no browser)
-- `test/smoke/helpers.mjs` — shared helpers for smoke tests (CLI runner, assertions, temp dir, manifest)
-- `test/smoke/quick.mjs` — representative CLI contract smoke (~15s, ~5 Chromium launches)
-- `test/smoke/full.mjs` — full browser regression suite (~75s, ~21 Chromium launches)
-- `test/package/smoke.mjs` — package/installation smoke test
-- `parseNumeric()` and `clampPositive()` pure helpers in `lib/options.js` (exported for callers, not used internally)
+- `lib/settle.js` — best-effort font and image settling before screenshot
+- `--no-settle` flag to disable font/image settle and animation normalization
+- `--settle-timeout <ms>` to control settle timeout ceiling (default 3000)
+- `fontWaitMs` and `imageWaitMs` timing fields in batch manifest
+- `test/smoke/settle.mjs` — settle integration tests with fixture pages
+- Fixture pages: IntersectionObserver reveal, font ready, slow image, finite animation, infinite animation
 
 ### Changed
 
-- Test suite restructured: `test/smoke.mjs` → `test/smoke/quick.mjs` + `test/smoke/full.mjs`
-- `npm test` now runs unit + quick smoke (~15s) instead of full smoke (~90s)
-- `npm run verify`, `npm run verify:full`, `npm run verify:release` added
+- `capturePage()` pipeline: navigate → networkidle → pre-scroll → settle → wait → screenshot
+- Screenshot now uses `animations: 'disabled'` when settle is enabled
+- `--no-pre-scroll` no longer implicitly disables font/image settle
+- `--settle-timeout` is a ceiling, not a fixed sleep — returns early when resources are ready
+- `networkidleTimeout` now available in single mode (`--networkidle-timeout`)
 
-### Removed
+### Fixed
 
-- `test/smoke.mjs` — replaced by `quick.mjs` and `full.mjs`
-
-## [0.6.1] — 2026-07-07
+- Playwright `page.screenshot()` unbounded font wait when slow `<img>` or `<font>` request is pending
+  — bypassed via `PW_TEST_SCREENSHOT_NO_FONTS_READY=1` (mshot performs its own bounded settle wait)
 
 ## [0.6.1] — 2026-07-07
 

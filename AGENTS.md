@@ -88,6 +88,7 @@
 mshot.js                    — thin CLI entry, parseArgs, dispatch single/batch
 lib/options.js              — CLI options, defaults, help text, validation (no browser, no I/O)
 lib/capture.js              — core page capture (navigate → stabilize → screenshot → crop)
+lib/settle.js               — bounded font/image settling (no browser, no I/O)
 lib/output.js               — file helpers (atomic write, safe filenames)
 lib/batch.js                — batch orchestrator (1 browser, concurrency, manifest)
 lib/discovery.js            — rendered link discovery (browser-dependent)
@@ -97,6 +98,7 @@ lib/url-list.js             — pure: readUrlsFile, filterDuplicateCandidates
 ```
 
 - `lib/capture.js` — принимает Playwright page, возвращает `{ buffer, limited, warnings, timings }`. НЕ запускает/не закрывает браузер. НЕ пишет файлы.
+- `lib/settle.js` — bounded font/image settling via manual polling. Принимает Playwright page, возвращает `{ fontWaitMs, imageWaitMs, warnings }`. НЕ запускает/не закрывает браузер. НЕ пишет файлы. Единственный владелец ожидания fonts/images.
 - `lib/output.js` — файловый I/O, без браузера.
 - `lib/batch.js` — orchestrator: 1 browser на весь батч, discovery, dedup, concurrency, manifest. Не анализирует скриншоты.
 - `lib/manifest.js` — чистые функции создания записей + writeFileSync.
@@ -104,6 +106,20 @@ lib/url-list.js             — pure: readUrlsFile, filterDuplicateCandidates
 - `lib/discovery.js` — browser-dependent, но self-contained.
 - Новые модули должны быть чистыми (без browser, без I/O), если возможно.
 
+## Playwright compatibility flag
+
+В `mshot.js` централизованно установлен:
+
+```js
+process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1'
+```
+
+**Причина:** Playwright `page.screenshot()` internally ждёт `document.fonts.ready`, что неограниченно задерживается при pending `<img>` или `<font>` запросах. mshot уже выполняет bounded settle wait (через `--settle-timeout`), поэтому flag отключает дублирующее неограниченное ожидание.
+
+**Защита:** regression-тесты в `test/smoke/settle.mjs` (fixture с 5s delayed image endpoint, `--settle-timeout 800`).
+
+**При обновлении Playwright:** обязателен slow-resource regression test. Если флаг исчезнет — запасной путь: Chromium CDP `Page.captureScreenshot`.
+
 ## Текущая версия
 
-**0.6.1**
+**0.7.0**
