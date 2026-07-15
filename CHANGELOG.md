@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-07-15
+
+### Added
+
+- `--segments` flag for batch mode — creates overview thumbnail + overlapping segments from a single capture
+- `--segment-height <px>` — segment height in pixels (default 2200)
+- `--segment-overlap <px>` — overlap between adjacent segments (default 300)
+- `lib/segments.js` — pure image processing module using Sharp for overview/segmentation
+- `lib/output.js` — `writeBufferSet()` for atomic multi-file writes
+- `lib/manifest.js` — `createSegmentedPageRecord()`, `buildSegmentsMetadata()`, `buildOverviewMetadata()`
+- Segmented manifest fields: `segments[viewport][]` with `{ file, x, y, width, height }`
+- Segmented manifest fields: `overview[viewport]` with `{ file, sourceWidth, sourceHeight, width, height }`
+- Post-processing timings: `overviewMs`, `segmentationMs`, `outputMs`
+- `test/lib/segments.test.js` — 10000+ unit tests for segmentation math and image processing
+- `test/smoke/full.mjs` — segments CLI smoke tests (validation, basic, --max-height)
+
+### Changed
+
+- Batch manifest `screenshots[viewport]` now points to overview file when `--segments` is used
+- `totalMs` now includes post-processing time when segments are enabled
+- Segmentation uses only Sharp post-processing — no additional browser captures
+
+### Fixed
+
+- `--segment-height` and `--segment-overlap` now properly validated (must be integers, overlap < height)
+- Missing `join` import in `lib/batch.js` caused silent capture failures
+
 ## [0.7.0] — 2026-07-15
 
 ### Added

@@ -106,6 +106,13 @@ lib/url-list.js             — pure: readUrlsFile, filterDuplicateCandidates
 - `lib/discovery.js` — browser-dependent, но self-contained.
 - Новые модули должны быть чистыми (без browser, без I/O), если возможно.
 
+## Архитектурные правила
+
+- **one browser capture → Sharp overview/segments**: Для `--segments` один захват Playwright даёт full-page buffer. Всё создание overview и сегментов делается через Sharp post-processing — никаких дополнительных browser opens, repeated captures, или repeated settle.
+- `lib/segments.js` — pure image processing через Sharp. Без Playwright, без file I/O, без stdout.
+- `lib/output.js` — файловый I/O. `writeBufferSet()` для atomic multi-file writes.
+- `lib/batch.js` — orchestrator. Вызывает `createSegmentArtifacts()` после одного capture, формирует filenames, пишет через `writeBufferSet()`, добавляет metadata в manifest.
+
 ## Playwright compatibility flag
 
 В `mshot.js` централизованно установлен:
@@ -122,4 +129,4 @@ process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = '1'
 
 ## Текущая версия
 
-**0.7.0**
+**0.8.0**

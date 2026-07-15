@@ -99,6 +99,9 @@ With `--urls-file`:
 | `--no-route-dedupe`          |              | Disable route pattern deduplication                       |
 | `--depth <n>`                | `1`          | Link discovery depth: 1 = base only, 2 = one level deeper |
 | `--urls-file <file>`         |              | Explicit URL/path list (plain text, one per line)         |
+| `--segments`                 | `false`      | **Batch only:** Create overview + overlapping segments    |
+| `--segment-height <px>`      | `2200`       | Segment height in pixels (requires `--segments`)          |
+| `--segment-overlap <px>`     | `300`        | Overlap between adjacent segments (requires `--segments`) |
 
 ### Contract
 
@@ -188,7 +191,18 @@ Each page record includes timing breakdown:
 - `fontWaitMs` — font settle time (if settle enabled)
 - `imageWaitMs` — image settle time (if settle enabled)
 - `screenshotMs` — screenshot capture time
-- `totalMs` — total capture time
+- `overviewMs` — overview thumbnail creation time (if `--segments`)
+- `segmentationMs` — segment crop time (if `--segments`)
+- `outputMs` — file output time (if `--segments`)
+- `totalMs` — total capture time (includes post-processing when segments enabled)
+
+#### Segmented output fields
+
+When `--segments` is used, each page record includes additional additive fields:
+
+- `segments[viewport][]` — array of `{ file, x, y, width, height }` for each segment
+- `overview[viewport]` — `{ file, sourceWidth, sourceHeight, width, height }` for the overview thumbnail
+- `screenshots[viewport]` — remains a string path, now pointing to the overview file
 
 #### Route pattern deduplication
 
@@ -207,6 +221,80 @@ Duplicates are recorded in `manifest.json` under `skipped[]` with `reason: "dupl
 
 - `--depth 1` (default): base page + links from base page
 - `--depth 2`: after dedupe, open selected representative pages and discover their links too
+
+#### Segmented output (batch only, opt-in)
+
+For long pages, `--segments` creates an overview thumbnail and a sequence of overlapping segments from a **single browser capture**.
+All post-processing uses Sharp — no additional browser opens or screenshots.
+
+```bash
+mshot batch --url http://localhost:3079 --out-dir tmp/visual-capture --segments
+```
+
+**How it works:**
+
+1. Navigate → settle → screenshot (one capture per viewport)
+2. Apply `--max-height` if specified (crops the full-page buffer)
+3. Create overview thumbnail via Sharp (max height 3000px, preserves aspect ratio)
+4. Create overlapping segments via Sharp crops
+5. Write all files atomically (overview + all segments)
+6. Write manifest last (commit point)
+
+**Filenames:**
+
+For route `/project/demo`, viewport `desktop`:
+
+- `project-demo-desktop-overview.jpg` — full-page thumbnail
+- `project-demo-desktop-segment-001.jpg` — first segment
+- `project-demo-desktop-segment-002.jpg` — second segment (overlaps 001)
+- ...
+
+**Manifest structure with `--segments`:**
+
+```jsonc
+{
+  "screenshots": {
+    "desktop": "project-demo-desktop-overview.jpg"
+  },
+  "overview": {
+    "desktop": {
+      "file": "project-demo-desktop-overview.jpg",
+      "sourceWidth": 1440,
+      "sourceHeight": 17668,
+      "width": 244,
+      "height": 3000
+    }
+  },
+  "segments": {
+    "desktop": [
+      {
+        "file": "project-demo-desktop-segment-001.jpg",
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 2200
+      },
+      {
+        "file": "project-demo-desktop-segment-002.jpg",
+        "x": 0,
+        "y": 1900,
+        "width": 1440,
+        "height": 2200
+      }
+    ]
+  }
+}
+```
+
+**Key points:**
+
+- Feature is batch-only and opt-in (`--segments` required)
+- `screenshots[viewport]` remains a string path → points to overview
+- Detailed crops are in `segments[viewport][]`
+- `--max-height` is applied before segmentation
+- Single browser capture → Sharp overview/segments
+- Atomic multi-file write (all or nothing)
+- Segments overlap by `--segment-overlap` pixels
 
 #### Example
 

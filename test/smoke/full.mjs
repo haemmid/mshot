@@ -530,6 +530,149 @@ try {
     )
   }
 
+  // ── Batch — segments (opt-in feature) ───────────────────
+  section('28. batch — --segments basic')
+  {
+    const batchDir = join(tmp, 'batch-segs')
+    const stdout = runCli([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--segments',
+      '--viewports',
+      'desktop'
+    ])
+    const manifest = JSON.parse(readFileSync(stdout.trim(), 'utf8'))
+    assert(manifest.pages.length === 1, 'segments: 1 page captured')
+    const page = manifest.pages[0]
+    // screenshots[viewport] → overview path
+    assert(
+      page.screenshots.desktop.endsWith('-overview.jpg'),
+      'screenshots.desktop → overview path'
+    )
+    // segments metadata exists
+    assert(page.segments, 'segments metadata exists')
+    assert(page.segments.desktop, 'segments.desktop exists')
+    assert(Array.isArray(page.segments.desktop), 'segments.desktop is array')
+    assert(
+      page.segments.desktop.length > 0,
+      'segments.desktop has at least 1 segment'
+    )
+    // overview metadata exists
+    assert(page.overview, 'overview metadata exists')
+    assert(page.overview.desktop, 'overview.desktop exists')
+    // overview dimensions
+    const ov = page.overview.desktop
+    assert(ov.sourceWidth === 1440, 'overview.sourceWidth = 1440')
+    assert(
+      ov.sourceHeight <= 3000 || ov.height <= 3000,
+      'overview height <= 3000'
+    )
+    // segment coordinates
+    const seg = page.segments.desktop[0]
+    assert(seg.x === 0, 'segment x = 0')
+    assert(seg.y === 0, 'segment y = 0 (first segment)')
+    assert(seg.width === 1440, 'segment width = 1440')
+    // files exist
+    assert(
+      existsSync(join(batchDir, page.screenshots.desktop)),
+      'overview file exists'
+    )
+    assert(existsSync(join(batchDir, seg.file)), 'segment file exists')
+    // stdout is single line (manifest path)
+    const lines = stdout.trim().split('\n')
+    assert(lines.length === 1, 'stdout is single line')
+  }
+
+  section('29. batch — --segments with --max-height')
+  {
+    const batchDir = join(tmp, 'batch-segs-maxh')
+    const stdout = runCli([
+      'batch',
+      '--url',
+      'https://example.com',
+      '--out-dir',
+      batchDir,
+      '--segments',
+      '--max-height',
+      '5000',
+      '--viewports',
+      'desktop'
+    ])
+    const manifest = JSON.parse(readFileSync(stdout.trim(), 'utf8'))
+    assert(manifest.pages.length > 0, 'segments+max-height: page captured')
+    const page = manifest.pages[0]
+    assert(page.segments, 'segments metadata exists with --max-height')
+    assert(page.overview, 'overview metadata exists with --max-height')
+  }
+
+  section('30. batch — --segments validation errors')
+  {
+    // --segment-height without --segments
+    {
+      const r = runCliErr([
+        'batch',
+        '--url',
+        'https://example.com',
+        '--out-dir',
+        join(tmp, 'batch-segs-val'),
+        '--segment-height',
+        '2200'
+      ])
+      assertExit(r.exitCode, 1, 'segment-height without --segments')
+      assertStderrHas(
+        r.stderr,
+        'MSHOT_ERROR:',
+        'segment-height without --segments → error'
+      )
+      assertStderrHas(
+        r.stderr,
+        '--segment-height and --segment-overlap require --segments',
+        'error message correct'
+      )
+    }
+
+    // --segment-height invalid
+    {
+      const r = runCliErr([
+        'batch',
+        '--url',
+        'https://example.com',
+        '--out-dir',
+        join(tmp, 'batch-segs-val2'),
+        '--segments',
+        '--segment-height',
+        'abc'
+      ])
+      assertExit(r.exitCode, 1, 'invalid segment-height')
+      assertStderrHas(
+        r.stderr,
+        'segment-height must be a positive integer',
+        'error message correct'
+      )
+    }
+
+    // --segment-overlap >= segment-height
+    {
+      const r = runCliErr([
+        'batch',
+        '--url',
+        'https://example.com',
+        '--out-dir',
+        join(tmp, 'batch-segs-val3'),
+        '--segments',
+        '--segment-height',
+        '1000',
+        '--segment-overlap',
+        '1000'
+      ])
+      assertExit(r.exitCode, 1, 'overlap >= height')
+      assertStderrHas(r.stderr, 'segment-overlap', 'error mentions overlap')
+    }
+  }
+
   // ── Summary ─────────────────────────────────────────────
   console.log(`\n${'='.repeat(40)}`)
   console.log(`Full regression smoke done.`)

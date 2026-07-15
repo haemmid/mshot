@@ -149,7 +149,10 @@ async function runBatchMode(values) {
     routeDedupe: parsed.routeDedupe,
     maxPerPattern: parsed.maxPerPattern,
     depth: parsed.depth,
-    urlsFile: parsed.urlsFile
+    urlsFile: parsed.urlsFile,
+    segmentsEnabled: parsed.segmentsEnabled,
+    segmentHeight: parsed.segmentHeight,
+    segmentOverlap: parsed.segmentOverlap
   }
 
   const result = await runBatch(batchOpts)
